@@ -19,7 +19,8 @@ const Ctx = createContext<AuthCtx | null>(null);
 const STORAGE_KEY = "siem_auth";
 
 // Real system authentication endpoint (Java Spring Boot)
-const AUTH_URL = "http://localhost:8080/api/auth/signin";
+const BASE_API = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const AUTH_URL = `${BASE_API}/api/auth/signin`;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
