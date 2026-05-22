@@ -83,7 +83,7 @@ public class WebSecurityConfig {
             "http://localhost:5173",
             "http://localhost:8081",
             "http://127.0.0.1:8081",
-            "https://your-frontend-project.vercel.app" // ⚠️ Remember to paste your actual Vercel link here!
+            "https://aviation-gps-spoofing.vercel.app" 
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
