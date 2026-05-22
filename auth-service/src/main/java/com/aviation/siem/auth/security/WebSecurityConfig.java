@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
@@ -22,6 +23,7 @@ import java.util.Arrays;
 @Configuration
 @EnableMethodSecurity
 public class WebSecurityConfig {
+
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
@@ -36,10 +38,8 @@ public class WebSecurityConfig {
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
-
         return authProvider;
     }
 
@@ -53,7 +53,6 @@ public class WebSecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-  // ... Your existing filterChain method above ...
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -63,7 +62,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
-                        .requestMatchers("/").permitAll() 
+                        .requestMatchers("/").permitAll() // Keeps Render health checks happy
                         .requestMatchers("/api/forensic/**").hasAnyAuthority("ROLE_ANALYST", "ROLE_ADMIN")
                         .anyRequest().authenticated()
                 );
@@ -74,46 +73,24 @@ public class WebSecurityConfig {
         return http.build();
     }
 
-    // ⚡ PASTE THIS MISSING BEAN DIRECTLY UNDERNEATH YOUR FILTER CHAIN METHOD:
     @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
         
-        // 1. Trust both your local environment and your live Vercel deployment
-        configuration.setAllowedOrigins(java.util.Arrays.asList(
-            "http://localhost:3000", 
-            "https://your-frontend-project.vercel.app" // ⚠️ Replace this with your actual Vercel domain
+        // Combined all your origins cleanly (Vite dev, React dev, local app, and production cloud)
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:8081",
+            "http://127.0.0.1:8081",
+            "https://your-frontend-project.vercel.app" // ⚠️ Remember to paste your actual Vercel link here!
         ));
         
-        // 2. Allow standard REST methods used by the dashboard
-        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
-        // 3. Allow Authorization and Content-Type headers so tokens can pass through
-        configuration.setAllowedHeaders(java.util.Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
-        
-        // 4. Must be true to pass JWTs and browser session headers across different domains
-        configuration.setAllowCredentials(true);
-        
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply globally to all paths
-        
-        return source;
-    }
-
-    http.authenticationProvider(authenticationProvider());
-    http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-
-    return http.build();
-}
-
-    @Bean
-    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:8081", "http://127.0.0.1:8081"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
-        configuration.setExposedHeaders(Arrays.asList("x-auth-token"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "x-auth-token"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "x-auth-token"));
         configuration.setAllowCredentials(true);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
