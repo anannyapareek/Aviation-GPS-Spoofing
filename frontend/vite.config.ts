@@ -6,7 +6,11 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Removed the custom Cloudflare server entry override so Vercel can use its native entry point.
+// Render deployment: disable Cloudflare adapter (Render runs Node.js, not Workers).
+// Keep the custom server entry for SSR error handling.
 export default defineConfig({
   cloudflare: false,
+  tanstackStart: {
+    server: { entry: "server" },
+  },
 });
